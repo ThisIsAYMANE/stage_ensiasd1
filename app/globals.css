@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary-blue: #2B6CB0;
+  --secondary-blue: #4299E1;
+  --accent-teal: #38B2AC;
+  --accent-purple: #6366F1;
+  --light-bg: #F5F8FA;
+  --card-bg: #FFFFFF;
+  --border-color: #E2E8F0;
+  --text-primary: #1A202C;
+  --text-secondary: #4A5568;
+  --warning: #ED8936;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 40% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 15%;
+    --primary: 213 78% 44%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 203 23% 90%;
+    --secondary-foreground: 210 40% 15%;
+    --muted: 210 23% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 180 25% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 32% 91%;
+    --input: 217 32% 91%;
+    --ring: 213 78% 44%;
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    --background: 210 40% 8%;
+    --foreground: 0 0% 98%;
+    --card: 210 40% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 40% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 213 78% 44%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 40% 15%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 210 40% 15%;
+    --muted-foreground: 215 16% 65%;
+    --accent: 180 25% 55%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 40% 15%;
+    --input: 210 40% 15%;
+    --ring: 213 78% 44%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* Custom Components */
+.btn-primary {
+  @apply bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 transition-colors duration-200;
+  border-radius: 0.25rem;
+}
+
+.btn-secondary {
+  @apply border border-primary text-primary hover:bg-primary hover:text-primary-foreground font-medium py-2 px-4 transition-colors duration-200;
+  border-radius: 0.25rem;
+}
+
+.card-sharp {
+  @apply bg-card border border-border shadow-sm;
+  border-radius: 0.25rem;
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--secondary-blue) 100%);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-purple) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
