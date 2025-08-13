@@ -1,5 +1,6 @@
 import { db } from './firebase';
 import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { GoogleMeetService } from './google-meet-service';
 
 export interface LessonNotification {
   lessonId: string;
@@ -27,10 +28,29 @@ export interface NotificationSchedule {
 }
 
 export class NotificationService {
+
   // Generate Google Meet link
-  static generateGoogleMeetLink(): string {
-    const meetingId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    return `https://meet.google.com/${meetingId}`;
+  static async generateGoogleMeetLink(lesson: LessonNotification): Promise<string> {
+    try {
+      // Use the simplified Google Meet service
+      const meetLink = await GoogleMeetService.generateMeetLink({
+        subject: lesson.subject,
+        studentName: lesson.studentName,
+        tutorName: lesson.tutorName,
+        date: lesson.date,
+        time: lesson.time,
+        duration: lesson.duration,
+        studentEmail: lesson.studentEmail,
+        tutorEmail: lesson.tutorEmail,
+      });
+      
+      return meetLink;
+    } catch (error) {
+      console.log('⚠️ Falling back to simple Google Meet link');
+      // Fallback to simple link
+      const meetingId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      return `https://meet.google.com/${meetingId}`;
+    }
   }
 
   // Send email notification
@@ -40,16 +60,31 @@ export class NotificationService {
     body: string
   ): Promise<boolean> {
     try {
-      // For now, we'll simulate sending emails
-      // Resend integration will be handled in the API route
-      console.log(`📧 Email sent to ${to}:`);
+      console.log(`📧 Sending email via API to ${to}:`);
       console.log(`Subject: ${subject}`);
       console.log(`Body: ${body}`);
-      console.log(`💡 Tip: Add RESEND_API_KEY to .env.local for real emails`);
       
-      // Simulate email sending delay
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return true;
+      // Call the email API route to send real emails
+      const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/send-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to,
+          subject,
+          body,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ Email API response:`, result);
+        return true;
+      } else {
+        console.error(`❌ Email API error: ${response.status}`);
+        return false;
+      }
     } catch (error) {
       console.error('Error sending email:', error);
       return false;
@@ -58,6 +93,11 @@ export class NotificationService {
 
   // Send 1-hour reminder notification
   static async sendOneHourReminder(lesson: LessonNotification): Promise<boolean> {
+    console.log(`\n📧 === 1-HOUR REMINDER EMAIL ===`);
+    console.log(`📧 Processing lesson: ${lesson.lessonId}`);
+    console.log(`📧 Student: ${lesson.studentName} (${lesson.studentEmail})`);
+    console.log(`📧 Tutor: ${lesson.tutorName} (${lesson.tutorEmail})`);
+    
     const subject = `Reminder: Your lesson with ${lesson.tutorName} starts in 1 hour`;
     const body = `
 Dear ${lesson.studentName},
@@ -77,26 +117,36 @@ Best regards,
 TutorConnect Team
     `;
 
-    // Send to student
+    console.log(`📧 Email Subject: ${subject}`);
+    console.log(`📧 Email Body: ${body}`);
+
+    // Send to student (use verified email for testing)
+    const studentEmail = lesson.studentEmail === 'aymanmaali85@gmail.com' ? 'maaliaymane24@gmail.com' : lesson.studentEmail;
+    console.log(`📧 Sending email to student: ${studentEmail} (original: ${lesson.studentEmail})`);
     const studentEmailSent = await this.sendEmailNotification(
-      lesson.studentEmail,
+      studentEmail,
       subject,
       body
     );
+    console.log(`📧 Student email result: ${studentEmailSent ? '✅ Sent' : '❌ Failed'}`);
 
     // Send to tutor
+    console.log(`📧 Sending email to tutor: ${lesson.tutorEmail}`);
     const tutorEmailSent = await this.sendEmailNotification(
       lesson.tutorEmail,
       subject,
       body
     );
+    console.log(`📧 Tutor email result: ${tutorEmailSent ? '✅ Sent' : '❌ Failed'}`);
+
+    console.log(`📧 === END 1-HOUR REMINDER ===\n`);
 
     return studentEmailSent && tutorEmailSent;
   }
 
   // Send 1-minute reminder with Google Meet link
   static async sendOneMinuteReminder(lesson: LessonNotification): Promise<boolean> {
-    const meetLink = this.generateGoogleMeetLink();
+    const meetLink = await this.generateGoogleMeetLink(lesson);
     
     const subject = `Your lesson starts now - Join Google Meet`;
     const body = `
@@ -119,40 +169,70 @@ Best regards,
 TutorConnect Team
     `;
 
-    // Send to student
+    console.log(`\n📧 === GOOGLE MEET EMAIL ===`);
+    console.log(`📧 To Student (${lesson.studentEmail}):`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body: ${body}`);
+    console.log(`📧 To Tutor (${lesson.tutorEmail}):`);
+    console.log(`Subject: ${subject}`);
+    console.log(`Body: ${body}`);
+    console.log(`📧 === END EMAIL ===\n`);
+
+    // Send to student (use verified email for testing)
+    const studentEmail = lesson.studentEmail === 'aymanmaali85@gmail.com' ? 'maaliaymane24@gmail.com' : lesson.studentEmail;
+    console.log(`📧 Sending student email to: ${studentEmail} (original: ${lesson.studentEmail})`);
+    
     const studentEmailSent = await this.sendEmailNotification(
-      lesson.studentEmail,
+      studentEmail,
       subject,
       body
     );
+    
+    console.log(`📧 Student email result: ${studentEmailSent ? '✅ Sent' : '❌ Failed'}`);
 
     // Send to tutor
+    console.log(`📧 Sending tutor email to: ${lesson.tutorEmail}`);
+    
     const tutorEmailSent = await this.sendEmailNotification(
       lesson.tutorEmail,
       subject,
       body
     );
+    
+    console.log(`📧 Tutor email result: ${tutorEmailSent ? '✅ Sent' : '❌ Failed'}`);
 
     return studentEmailSent && tutorEmailSent;
   }
 
   // Helper function to parse time in various formats
   static parseTime(timeString: string): string {
-    // Handle 12-hour format like "7:00 PM" or "7:00 pm"
+    console.log(`🕐 Parsing time: "${timeString}"`);
+    
+    // Handle 12-hour format like "05:30 PM" or "7:00 PM"
     if (timeString.toLowerCase().includes('pm') || timeString.toLowerCase().includes('am')) {
-      const time = timeString.toLowerCase().replace(/\s*(am|pm)/, '');
+      // Remove AM/PM and trim whitespace
+      const time = timeString.toLowerCase().replace(/\s*(am|pm)/, '').trim();
       const [hours, minutes] = time.split(':').map(Number);
       
+      console.log(`🕐 Hours: ${hours}, Minutes: ${minutes}`);
+      
+      let adjustedHours = hours;
+      
       if (timeString.toLowerCase().includes('pm') && hours !== 12) {
-        return `${hours + 12}:${minutes.toString().padStart(2, '0')}`;
+        adjustedHours = hours + 12;
+        console.log(`🕐 PM time, adjusted hours: ${adjustedHours}`);
       } else if (timeString.toLowerCase().includes('am') && hours === 12) {
-        return `00:${minutes.toString().padStart(2, '0')}`;
-      } else {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        adjustedHours = 0;
+        console.log(`🕐 12 AM, adjusted hours: 0`);
       }
+      
+      const result = `${adjustedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      console.log(`🕐 Parsed result: ${result}`);
+      return result;
     }
     
     // Already in 24-hour format
+    console.log(`🕐 Already 24-hour format: ${timeString}`);
     return timeString;
   }
 
@@ -218,27 +298,51 @@ TutorConnect Team
   // Process notifications for all upcoming lessons
   static async processNotifications(): Promise<void> {
     try {
+      console.log('🔄 Starting notification processing...');
+      
       const upcomingLessons = await this.getUpcomingLessons();
+      console.log(`📚 Found ${upcomingLessons.length} upcoming lessons`);
+      
       const now = new Date();
+      console.log(`⏰ Current time: ${now.toISOString()}`);
 
       for (const lesson of upcomingLessons) {
-        const lessonDate = new Date(`${lesson.date}T${lesson.time}`);
-        const timeUntilLesson = lessonDate.getTime() - now.getTime();
+        console.log(`📖 Processing lesson: ${lesson.lessonId} - ${lesson.subject}`);
+        console.log(`📅 Lesson time: ${lesson.date} at ${lesson.time}`);
         
-        // Check if it's time to send 1-hour reminder (between 60-61 minutes before)
-        if (timeUntilLesson <= 60 * 60 * 1000 && timeUntilLesson > 59 * 60 * 1000) {
+        // Parse time correctly to handle "05:30 PM" format
+        const parsedTime = this.parseTime(lesson.time);
+        const lessonDate = new Date(`${lesson.date}T${parsedTime}`);
+        const timeUntilLesson = lessonDate.getTime() - now.getTime();
+        const minutesUntil = Math.floor(timeUntilLesson / (1000 * 60));
+        
+        console.log(`⏱️ Time until lesson: ${minutesUntil} minutes`);
+        console.log(`⏱️ Parsed time: ${parsedTime} (original: ${lesson.time})`);
+        
+        // Check if it's time to send 1-hour reminder (within 1 hour before)
+        if (timeUntilLesson <= 60 * 60 * 1000 && timeUntilLesson > 0) {
+          console.log(`⏰ Lesson ${lesson.lessonId} is within 1 hour (${minutesUntil} minutes), sending reminder now`);
           await this.sendOneHourReminder(lesson);
           console.log(`✅ Sent 1-hour reminder for lesson: ${lesson.lessonId}`);
         }
         
-        // Check if it's time to send 1-minute reminder (between 1-2 minutes before)
+        // Check if it's time to send 1-minute reminder (within 1 minute before)
         if (timeUntilLesson <= 1 * 60 * 1000 && timeUntilLesson > 0) {
+          console.log(`🎥 Lesson ${lesson.lessonId} is starting soon (${minutesUntil} minutes), sending Google Meet link now`);
           await this.sendOneMinuteReminder(lesson);
           console.log(`✅ Sent 1-minute reminder with Google Meet for lesson: ${lesson.lessonId}`);
         }
+        
+        // Check if lesson has already started
+        if (timeUntilLesson <= 0) {
+          console.log(`⏰ Lesson ${lesson.lessonId} has already started or finished`);
+        }
       }
+      
+      console.log('✅ Notification processing completed');
     } catch (error) {
-      console.error('Error processing notifications:', error);
+      console.error('❌ Error processing notifications:', error);
+      throw error; // Re-throw to see the error in the API
     }
   }
 }

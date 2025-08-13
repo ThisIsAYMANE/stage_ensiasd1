@@ -386,12 +386,12 @@ export default function TutorDashboard() {
                             <div className="text-sm text-text-secondary">{lesson.subject}</div>
                             <div className="flex items-center space-x-4 text-sm text-text-secondary mt-1">
                               <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4 text-primary" />
-                                <span>{format(new Date(lesson.date), 'PPP')}</span>
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span>{format(new Date(lesson.date), 'PPP')}</span>
                               </span>
                               <span className="flex items-center space-x-1">
-                                <Clock className="h-4 w-4 text-primary" />
-                                <span>{lesson.time}</span>
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span>{lesson.time}</span>
                               </span>
                               {lesson.totalCost && (
                                 <span className="font-medium text-green-600">
@@ -484,12 +484,12 @@ export default function TutorDashboard() {
                             <div className="text-sm text-text-secondary">{lesson.subject}</div>
                             <div className="flex items-center space-x-4 text-sm text-text-secondary mt-1">
                               <span className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4 text-primary" />
-                                <span>{format(new Date(lesson.date), 'PPP')}</span>
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span>{format(new Date(lesson.date), 'PPP')}</span>
                               </span>
                               <span className="flex items-center space-x-1">
-                                <Clock className="h-4 w-4 text-primary" />
-                                <span>{lesson.time}</span>
+                            <Clock className="h-4 w-4 text-primary" />
+                            <span>{lesson.time}</span>
                               </span>
                               {lesson.totalCost && (
                                 <span className="font-medium text-green-600">

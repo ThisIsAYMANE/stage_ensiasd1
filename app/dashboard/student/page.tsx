@@ -74,6 +74,24 @@ export default function StudentDashboard() {
       );
       
       console.log('Processed lessons:', sortedLessons);
+      
+      // Debug lesson categorization
+      sortedLessons.forEach(lesson => {
+        const parsedTime = parseTime(lesson.time);
+        const lessonDateTime = new Date(`${lesson.date}T${parsedTime}`);
+        const now = new Date();
+        const timeUntil = lessonDateTime.getTime() - now.getTime();
+        const minutesUntil = Math.floor(timeUntil / (1000 * 60));
+        
+        console.log(`📚 Lesson ${lesson.id}: ${lesson.subject}`);
+        console.log(`   Date: ${lesson.date}, Time: ${lesson.time} (parsed: ${parsedTime})`);
+        console.log(`   DateTime: ${lessonDateTime.toISOString()}`);
+        console.log(`   Current: ${now.toISOString()}`);
+        console.log(`   Minutes until: ${minutesUntil}`);
+        console.log(`   Status: ${lesson.status}`);
+        console.log(`   Category: ${minutesUntil > 0 ? 'UPCOMING' : 'PAST'}`);
+      });
+      
       setLessons(sortedLessons);
     } catch (error) {
       console.error('Error fetching lessons:', error);
@@ -84,12 +102,44 @@ export default function StudentDashboard() {
   };
 
   const pendingLessons = lessons.filter(lesson => lesson.status === 'pending');
-  const upcomingLessons = lessons.filter(
-    lesson => lesson.status === 'confirmed' && new Date(lesson.date) > new Date()
-  );
-  const pastLessons = lessons.filter(
-    lesson => lesson.status === 'completed' || new Date(lesson.date) < new Date()
-  );
+  
+  // Helper function to parse time correctly
+  const parseTime = (timeString: string): string => {
+    if (timeString.toLowerCase().includes('pm') || timeString.toLowerCase().includes('am')) {
+      const time = timeString.toLowerCase().replace(/\s*(am|pm)/, '');
+      const [hours, minutes] = time.split(':').map(Number);
+      
+      if (timeString.toLowerCase().includes('pm') && hours !== 12) {
+        return `${hours + 12}:${minutes.toString().padStart(2, '0')}`;
+      } else if (timeString.toLowerCase().includes('am') && hours === 12) {
+        return `00:${minutes.toString().padStart(2, '0')}`;
+      } else {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      }
+    }
+    return timeString;
+  };
+
+  // Filter lessons based on actual date + time, not just date
+  const upcomingLessons = lessons.filter(lesson => {
+    if (lesson.status !== 'confirmed') return false;
+    
+    const parsedTime = parseTime(lesson.time);
+    const lessonDateTime = new Date(`${lesson.date}T${parsedTime}`);
+    const now = new Date();
+    
+    return lessonDateTime > now; // Lesson is in the future
+  });
+  
+  const pastLessons = lessons.filter(lesson => {
+    if (lesson.status === 'completed') return true;
+    
+    const parsedTime = parseTime(lesson.time);
+    const lessonDateTime = new Date(`${lesson.date}T${parsedTime}`);
+    const now = new Date();
+    
+    return lessonDateTime < now; // Lesson has already started
+  });
 
   const canJoinMeeting = (lesson: Lesson) => {
     const lessonDateTime = new Date(`${lesson.date} ${lesson.time}`);
@@ -101,14 +151,19 @@ export default function StudentDashboard() {
 
   const handleProcessNotifications = async () => {
     try {
+      console.log('🔔 Starting notification processing...');
+      console.log('📧 Current lessons:', lessons);
+      
       const result = await NotificationClient.processNotifications();
+      console.log('📡 Notification result:', result);
+      
       if (result.success) {
         toast.success('Notifications processed successfully!');
       } else {
         toast.error(result.message);
       }
     } catch (error) {
-      console.error('Error processing notifications:', error);
+      console.error('❌ Error processing notifications:', error);
       toast.error('Failed to process notifications');
     }
   };
@@ -239,6 +294,146 @@ export default function StudentDashboard() {
               >
                 <Bell className="h-4 w-4" />
                 Process Notifications
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    console.log('🧪 Testing API directly...');
+                    const response = await fetch('/api/notifications/process', { method: 'POST' });
+                    const data = await response.json();
+                    console.log('📡 Direct API response:', data);
+                    toast.success('API test completed!');
+                  } catch (error) {
+                    console.error('❌ API test error:', error);
+                    toast.error('API test failed');
+                  }
+                }} 
+                variant="outline" 
+                className="flex items-center space-x-2"
+                title="Test the notification API directly"
+              >
+                🧪 Test API
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    console.log('📧 Testing email sending directly...');
+                    const response = await fetch('/api/send-email', { 
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        to: 'maaliaymane24@gmail.com',
+                        subject: 'Test Email from TutorConnect',
+                        body: 'This is a test email to verify the system is working!'
+                      })
+                    });
+                    const data = await response.json();
+                    console.log('📧 Email test response:', data);
+                    toast.success('Email test completed!');
+                  } catch (error) {
+                    console.error('❌ Email test error:', error);
+                    toast.error('Email test failed');
+                  }
+                }} 
+                variant="outline" 
+                className="flex items-center space-x-2"
+                title="Test email sending directly"
+              >
+                📧 Test Email
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    console.log('⚙️ Checking configuration...');
+                    const response = await fetch('/api/check-config');
+                    const data = await response.json();
+                    console.log('⚙️ Configuration:', data.config);
+                    toast.success('Config check completed!');
+                  } catch (error) {
+                    console.error('❌ Config check error:', error);
+                    toast.error('Config check failed');
+                  }
+                }} 
+                variant="outline" 
+                className="flex items-center space-x-2"
+                title="Check system configuration"
+              >
+                ⚙️ Check Config
+              </Button>
+              <Button 
+                onClick={async () => {
+                  try {
+                    console.log('🔔 Sending 1-minute reminder manually...');
+                    
+                    // Find the lesson that's ready for 1-minute reminder
+                    const now = new Date();
+                    const currentTime = now.toLocaleTimeString('en-US', { 
+                      hour12: false, 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    });
+                    
+                    console.log(`⏰ Current time: ${currentTime}`);
+                    
+                    // Find lessons that should get 1-minute reminder
+                    const lessonsForReminder = lessons.filter(lesson => {
+                      if (lesson.status !== 'confirmed') return false;
+                      
+                      const parsedTime = parseTime(lesson.time);
+                      const lessonDateTime = new Date(`${lesson.date}T${parsedTime}`);
+                      const timeDiff = lessonDateTime.getTime() - now.getTime();
+                      const minutesUntil = Math.floor(timeDiff / (1000 * 60));
+                      
+                      console.log(`📚 Lesson: ${lesson.subject} at ${lesson.time}, minutes until: ${minutesUntil}`);
+                      
+                      // Send reminder if lesson is within 1 minute (past or present)
+                      return minutesUntil <= 1;
+                    });
+                    
+                    if (lessonsForReminder.length === 0) {
+                      console.log('❌ No lessons ready for 1-minute reminder');
+                      toast.error('No lessons ready for 1-minute reminder');
+                      return;
+                    }
+                    
+                    console.log(`🔔 Found ${lessonsForReminder.length} lesson(s) for 1-minute reminder`);
+                    
+                    // Send 1-minute reminder for each lesson
+                    for (const lesson of lessonsForReminder) {
+                      console.log(`📧 Sending 1-minute reminder for: ${lesson.subject}`);
+                      console.log(`📧 Lesson ID: ${lesson.id}`);
+                      console.log(`📧 Student Email: ${lesson.studentEmail}`);
+                      console.log(`📧 Will send to: maaliaymane24@gmail.com (verified email)`);
+                      
+                      const response = await fetch('/api/send-1min-reminder', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ lessonId: lesson.id }),
+                      });
+                      
+                      const result = await response.json();
+                      console.log(`📧 1-minute reminder result:`, result);
+                      
+                      if (result.success) {
+                        console.log(`✅ 1-minute reminder sent successfully!`);
+                        console.log(`📧 Check your email at: maaliaymane24@gmail.com`);
+                      } else {
+                        console.log(`❌ 1-minute reminder failed:`, result.error);
+                      }
+                    }
+                    
+                    toast.success(`Sent 1-minute reminders for ${lessonsForReminder.length} lesson(s)!`);
+                    
+                  } catch (error) {
+                    console.error('❌ 1-minute reminder error:', error);
+                    toast.error('Failed to send 1-minute reminders');
+                  }
+                }} 
+                variant="outline" 
+                className="flex items-center space-x-2"
+                title="Send 1-minute reminder with Google Meet link"
+              >
+                🔔 Send 1-Min Reminder
               </Button>
               <Button 
                 onClick={fetchLessons} 
