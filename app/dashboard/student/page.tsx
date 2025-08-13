@@ -436,6 +436,30 @@ export default function StudentDashboard() {
                 🔔 Send 1-Min Reminder
               </Button>
               <Button 
+                onClick={async () => {
+                  try {
+                    console.log('🔧 Testing Google Meet API...');
+                    const response = await fetch('/api/test-google-meet');
+                    const result = await response.json();
+                    console.log('🔧 Google Meet API test result:', result);
+                    
+                    if (result.success) {
+                      toast.success(`Google Meet API working! Link: ${result.meetLink}`);
+                    } else {
+                      toast.error(`Google Meet API failed: ${result.error}`);
+                    }
+                  } catch (error) {
+                    console.error('🔧 Google Meet API test error:', error);
+                    toast.error('Google Meet API test failed');
+                  }
+                }} 
+                variant="outline" 
+                className="flex items-center space-x-2"
+                title="Test Google Meet API integration"
+              >
+                🔧 Test Google Meet API
+              </Button>
+              <Button 
                 onClick={fetchLessons} 
                 variant="outline" 
                 className="flex items-center space-x-2"
